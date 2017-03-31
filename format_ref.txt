@@ -1,0 +1,19 @@
+// comment
+
+scene
+  camera <id>
+  light <id>
+  ...
+  model <id> <asset_filename>
+    model <id> <asset_filename>
+    ...
+      ...
+
+frames <total_time_ms>
+  <keyframe_time_ms>
+    <camera_id> [pos.x <val>] [pos.y <val>] [pos.z <val>] [view.x <val>] [view.y <val>] [view.z <val>]
+    <light_id> [pos.x <val>] [pos.y <val>] [pos.z <val>]
+    <id> [trans.x <val>] [trans.y <val>] [trans.z <val>] [rot.x <val>] [rot.y <val>] [rot.z <val>] [scale.x <val>] [scale.y <val>] [scale.z <val>] [color <val>]
+    ...
+  <keyframe_time_ms>
+  ...

@@ -1,0 +1,24 @@
+scene
+  camera cam
+  light light1
+  model block block.obj
+    model child_block block.obj
+  model qtlogo qt_logo.obj
+
+frames 20000
+  0
+    cam pos.z -12
+    light1 pos.z -20
+    qtlogo rot.y 180 rot.x 60 trans.z -8 color green
+    block trans.x -2.5 trans.z -5 rot.x 45 rot.y 45 rot.z 30 color red
+    child_block trans.y 3 color blue
+
+  // ### must only animate one model's transform below for now
+  // color/light/camera anim not supported yet
+
+  2000
+    qtlogo rot.z 90
+  5000
+    qtlogo rot.y 90
+  10000
+    qtlogo rot.y 180 rot.x 60 rot.z 0

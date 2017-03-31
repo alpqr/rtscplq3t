@@ -1,0 +1,26 @@
+scene
+  camera cam
+  light light1
+  model block block.obj red
+  model qtlogo0 qt_logo.obj green
+    model qtlogo qt_logo.obj green
+      model child_block block.obj blue
+        model grandchild_block block.obj gray
+      model child_block2 block.obj cyan
+        model grandchild_block2 block.obj gray
+        model grandchild_block3 block.obj gray
+    model qtlogoX qt_logo.obj green
+
+frames 20000
+  0
+    cam pos.z -40
+    light1 pos.x -10.0 pos.y 10.0 pos.z 10.0
+    block trans.z -10.0 rot.y -45
+    qtlogo trans.z -5.0 trans.x 2 trans.y 3
+    child_block trans.x 2 trans.y 2
+  5000
+    qtlogo rot.z 90
+  8000
+    child_block color yellow
+  10000
+    block scale.x 2 scale.y 2 scale.z 2

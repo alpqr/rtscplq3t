@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file alias="qt_logo.obj">../assets/qt_logo.obj</file>
+        <file alias="block.obj">../assets/block.obj</file>
+    </qresource>
+</RCC>
