@@ -56,12 +56,18 @@
 #include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DAnimation/QKeyframeAnimation>
-#include <QPropertyAnimation>
+#include <QVariantAnimation>
 
 ScenePlayer::ScenePlayer(QNode *parent)
     : Qt3DCore::QEntity(parent),
       m_parser(new SceneParser)
 {
+}
+
+ScenePlayer::~ScenePlayer()
+{
+    for (AnimData &animTarget : m_modelAnims)
+        animTarget.reset();
 }
 
 QString ScenePlayer::filename() const
@@ -193,106 +199,140 @@ void ScenePlayer::recursiveAddModels(const QHash<QByteArray, SceneData::Model> &
 
         AnimData a;
         a.t = t;
-        m_animTargets.insert(it.key(), a);
+        m_modelAnims.insert(it.key(), a);
 
         recursiveAddModels(mdl.childModels, firstFrame, modelEntity);
     }
 }
 
+class AnimationDriver : public QVariantAnimation
+{
+public:
+    AnimationDriver(ScenePlayer *p) : QVariantAnimation(p), m_sp(p) { }
+
+protected:
+    void updateCurrentValue(const QVariant &value) override;
+
+private:
+    ScenePlayer *m_sp;
+};
+
+void AnimationDriver::updateCurrentValue(const QVariant &value)
+{
+    const QHash<QByteArray, ScenePlayer::AnimData> *modelAnims = m_sp->modelAnims();
+    for (const ScenePlayer::AnimData &a : *modelAnims) {
+        if (a.keyframeAnimation)
+            a.keyframeAnimation->setPosition(value.toFloat());
+    }
+}
+
 void ScenePlayer::addAnimations(const SceneData &sd)
 {
-    // ## only support animating one single model for now
-
-    Qt3DAnimation::QKeyframeAnimation *a = new Qt3DAnimation::QKeyframeAnimation;
-    QVector<Qt3DCore::QTransform *> animTransforms;
-    QVector<float> animPos;
-
     for (const SceneData::Frame &f : sd.frames) {
         if (f.t == 0)
             continue;
-        if (!f.modelChanges.isEmpty()) {
-            for (auto it = f.modelChanges.cbegin(), ite = f.modelChanges.cend(); it != ite; ++it) {
-                AnimData &animTarget(m_animTargets[it.key()]);
-//                if (!a.a)
-//                    a.a = new Qt3DAnimation::QKeyframeAnimation;
-                const SceneData::ModelChange &ch(it.value());
-                Qt3DCore::QTransform *t = new Qt3DCore::QTransform;
-                if (animTransforms.isEmpty()) {
-                    t->setTranslation(animTarget.t->translation());
-                    t->setRotation(animTarget.t->rotation());
-                    t->setScale(animTarget.t->scale());
-                    qDebug() << "taking from original" << t->rotationX() << t->rotationY() << t->rotationZ();
-                    Qt3DCore::QTransform *initialTrans = new Qt3DCore::QTransform;
-                    initialTrans->setTranslation(t->translation());
-                    initialTrans->setRotation(t->rotation());
-                    initialTrans->setScale(t->scale());
-                    animPos.append(0);
-                    animTransforms.append(initialTrans);
-                } else {
-                    t->setTranslation(animTransforms.last()->translation());
-                    t->setRotation(animTransforms.last()->rotation());
-                    t->setScale(animTransforms.last()->scale());
-                    qDebug() << "taking from previous" << t->rotationX() << t->rotationY() << t->rotationZ();
-                }
-                if (ch.change & SceneData::ModelChange::TranslationX) {
-                    QVector3D v = t->translation();
-                    v.setX(ch.translation.x());
-                    t->setTranslation(v);
-                }
-                if (ch.change & SceneData::ModelChange::TranslationY) {
-                    QVector3D v = t->translation();
-                    v.setY(ch.translation.y());
-                    t->setTranslation(v);
-                }
-                if (ch.change & SceneData::ModelChange::TranslationZ) {
-                    QVector3D v = t->translation();
-                    v.setZ(ch.translation.z());
-                    t->setTranslation(v);
-                }
-                if (ch.change & SceneData::ModelChange::RotationX)
-                    t->setRotationX(ch.rotation.x());
-                if (ch.change & SceneData::ModelChange::RotationY)
-                    t->setRotationY(ch.rotation.y());
-                if (ch.change & SceneData::ModelChange::RotationZ)
-                    t->setRotationZ(ch.rotation.z());
-                if (ch.change & SceneData::ModelChange::ScaleX) {
-                    QVector3D v = t->scale3D();
-                    v.setX(ch.scale.x());
-                    t->setScale3D(v);
-                }
-                if (ch.change & SceneData::ModelChange::ScaleY) {
-                    QVector3D v = t->scale3D();
-                    v.setY(ch.scale.y());
-                    t->setScale3D(v);
-                }
-                if (ch.change & SceneData::ModelChange::ScaleZ) {
-                    QVector3D v = t->scale3D();
-                    v.setZ(ch.scale.z());
-                    t->setScale3D(v);
-                }
-                if (ch.change & SceneData::ModelChange::Color)
-                    qWarning("Color animation not yet supported");
-                animTransforms.append(t);
-                animPos.append(f.t);
-                a->setTarget(animTarget.t);
+
+        for (auto it = f.modelChanges.cbegin(), ite = f.modelChanges.cend(); it != ite; ++it) {
+            AnimData &animTarget(m_modelAnims[it.key()]);
+            const SceneData::ModelChange &ch(it.value());
+            Qt3DCore::QTransform *t = new Qt3DCore::QTransform;
+
+            if (animTarget.keyframePositions.isEmpty()) {
+                t->setTranslation(animTarget.t->translation());
+                t->setRotation(animTarget.t->rotation());
+                t->setScale(animTarget.t->scale());
+                Qt3DCore::QTransform *initialTrans = new Qt3DCore::QTransform;
+                initialTrans->setTranslation(t->translation());
+                initialTrans->setRotation(t->rotation());
+                initialTrans->setScale(t->scale());
+                animTarget.keyframePositions.append(0);
+                animTarget.keyframeTransforms.append(initialTrans);
+            } else {
+                t->setTranslation(animTarget.keyframeTransforms.last()->translation());
+                t->setRotation(animTarget.keyframeTransforms.last()->rotation());
+                t->setScale(animTarget.keyframeTransforms.last()->scale());
             }
+
+            if (ch.change & SceneData::ModelChange::TranslationX) {
+                QVector3D v = t->translation();
+                v.setX(ch.translation.x());
+                t->setTranslation(v);
+            }
+            if (ch.change & SceneData::ModelChange::TranslationY) {
+                QVector3D v = t->translation();
+                v.setY(ch.translation.y());
+                t->setTranslation(v);
+            }
+            if (ch.change & SceneData::ModelChange::TranslationZ) {
+                QVector3D v = t->translation();
+                v.setZ(ch.translation.z());
+                t->setTranslation(v);
+            }
+
+            if (ch.change & SceneData::ModelChange::RotationX)
+                t->setRotationX(ch.rotation.x());
+            if (ch.change & SceneData::ModelChange::RotationY)
+                t->setRotationY(ch.rotation.y());
+            if (ch.change & SceneData::ModelChange::RotationZ)
+                t->setRotationZ(ch.rotation.z());
+
+            if (ch.change & SceneData::ModelChange::ScaleX) {
+                QVector3D v = t->scale3D();
+                v.setX(ch.scale.x());
+                t->setScale3D(v);
+            }
+            if (ch.change & SceneData::ModelChange::ScaleY) {
+                QVector3D v = t->scale3D();
+                v.setY(ch.scale.y());
+                t->setScale3D(v);
+            }
+            if (ch.change & SceneData::ModelChange::ScaleZ) {
+                QVector3D v = t->scale3D();
+                v.setZ(ch.scale.z());
+                t->setScale3D(v);
+            }
+
+            if (ch.change & SceneData::ModelChange::Color)
+                qWarning("Color animation not yet supported");
+
+            animTarget.keyframePositions.append(f.t);
+            animTarget.keyframeTransforms.append(t);
         }
     }
 
-    animPos.append(sd.totalTime);
-    animTransforms.append(animTransforms.last());
+    for (AnimData &animTarget : m_modelAnims)
+        animTarget.finalize(sd.totalTime);
 
-    a->setFramePositions(animPos);
-    a->setKeyframes(animTransforms);
-    qDebug() << animPos;
-    qDebug() << animTransforms;
+    m_animDriver = new AnimationDriver(this);
+    m_animDriver->setDuration(sd.totalTime);
+    m_animDriver->setStartValue(QVariant::fromValue(0.0f));
+    m_animDriver->setEndValue(QVariant::fromValue(float(sd.totalTime)));
+    m_animDriver->setLoopCount(-1);
+    m_animDriver->start();
+}
 
-    QPropertyAnimation *driverAnim = new QPropertyAnimation(a);
-    driverAnim->setDuration(sd.totalTime);
-    driverAnim->setStartValue(QVariant::fromValue(0.0f));
-    driverAnim->setEndValue(QVariant::fromValue(float(sd.totalTime)));
-    driverAnim->setLoopCount(-1);
-    driverAnim->setTargetObject(a);
-    driverAnim->setPropertyName("position");
-    driverAnim->start();
+void ScenePlayer::AnimData::reset()
+{
+    delete keyframeAnimation;
+    keyframeAnimation = nullptr;
+
+    // the ownership of keyframe transforms is in fact unclear...
+    keyframeTransforms.clear();
+
+    keyframePositions.clear();
+
+    t = nullptr;
+}
+
+void ScenePlayer::AnimData::finalize(int totalTime)
+{
+    if (keyframePositions.isEmpty())
+        return;
+
+    keyframePositions.append(totalTime);
+    keyframeTransforms.append(keyframeTransforms.last());
+    keyframeAnimation = new Qt3DAnimation::QKeyframeAnimation;
+    keyframeAnimation->setFramePositions(keyframePositions);
+    keyframeAnimation->setKeyframes(keyframeTransforms);
+    keyframeAnimation->setTarget(t);
 }
