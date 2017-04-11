@@ -388,9 +388,14 @@ void ScenePlayer::addAnimations(const SceneData &sd,
     scale.appendChannelComponent(scaleY);
     scale.appendChannelComponent(scaleZ);
 
-    clipData.appendChannel(trans);
-    clipData.appendChannel(rot);
-    clipData.appendChannel(scale);
+    if (changes & SceneData::ModelChange::Translation)
+        clipData.appendChannel(trans);
+
+    if (changes & SceneData::ModelChange::Rotation)
+        clipData.appendChannel(rot);
+
+    if (changes & SceneData::ModelChange::Scale)
+        clipData.appendChannel(scale);
 
     clip->setClipData(clipData);
 
