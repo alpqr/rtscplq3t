@@ -13,7 +13,7 @@ scene
 
 frames 20000
   0
-    cam pos.z -40
+    cam pos.z 40
     light1 pos.x -10.0 pos.y 10.0 pos.z 10.0
     block trans.z -10.0 rot.y -45
     qtlogo trans.z -5.0 trans.x 2 trans.y 3

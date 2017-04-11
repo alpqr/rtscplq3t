@@ -55,13 +55,11 @@
 #include <QFutureWatcher>
 #include "twospaceparser.h"
 
-class QVariantAnimation;
-
 namespace Qt3DCore {
 class QTransform;
 }
-namespace Qt3DAnimation {
-class QKeyframeAnimation;
+namespace Qt3DRender {
+class QMaterial;
 }
 
 class ScenePlayer : public Qt3DCore::QEntity
@@ -84,36 +82,25 @@ public:
     qreal aspectRatio() const { return m_aspectRatio; }
     void setAspectRatio(qreal ratio);
 
-    struct AnimData {
-        Qt3DCore::QTransform *t;
-        Qt3DAnimation::QKeyframeAnimation *keyframeAnimation = nullptr;
-        QVector<float> keyframePositions;
-        QVector<Qt3DCore::QTransform *> keyframeTransforms;
-
-        void reset();
-        void finalize(int totalTime);
-    };
-
-    const QHash<QByteArray, AnimData> *modelAnims() const { return &m_modelAnims; }
-
 signals:
     void filenameChanged();
-    void animPosChanged();
 
 private:
     void setupScene(const SceneData &sd);
-    void recursiveAddModels(const QHash<QByteArray, SceneData::Model> &models,
-                            const SceneData::Frame &firstFrame,
+    void recursiveAddModels(const SceneData &sd,
+                            const QHash<QByteArray, SceneData::Model> &models,
                             Qt3DCore::QEntity *parentEntity);
-    void addAnimations(const SceneData &sd);
+    void addAnimations(const SceneData &sd,
+                       const QByteArray &modelId,
+                       Qt3DCore::QEntity *modelEntity,
+                       Qt3DCore::QTransform *modelTransform,
+                       Qt3DRender::QMaterial *modelMaterial);
 
-    QHash<QByteArray, AnimData> m_modelAnims;
     QString m_filename;
     QScopedPointer<SceneParser> m_parser;
     QFutureWatcher<SceneData> m_watcher;
     QObject *m_renderer = nullptr;
     qreal m_aspectRatio = 16 / 9.0f;
-    QVariantAnimation *m_animDriver;
 };
 
 #endif
