@@ -205,7 +205,7 @@ void ScenePlayer::addAnimations(const SceneData &sd,
                                 const QByteArray &modelId,
                                 Qt3DCore::QEntity *modelEntity,
                                 Qt3DCore::QTransform *modelTransform,
-                                Qt3DRender::QMaterial *modelMaterial)
+                                Qt3DExtras::QPhongMaterial *modelMaterial)
 {
     int changes = 0;
     for (const SceneData::Frame &f : sd.frames) {
@@ -273,9 +273,15 @@ void ScenePlayer::addAnimations(const SceneData &sd,
     Qt3DAnimation::QChannelComponent scaleY(QStringLiteral("Scale Y"));
     Qt3DAnimation::QChannelComponent scaleZ(QStringLiteral("Scale Z"));
 
+    Qt3DAnimation::QChannel color(QStringLiteral("Color"));
+    Qt3DAnimation::QChannelComponent colorR(QStringLiteral("Color R"));
+    Qt3DAnimation::QChannelComponent colorG(QStringLiteral("Color G"));
+    Qt3DAnimation::QChannelComponent colorB(QStringLiteral("Color B"));
+
     QVector3D curTrans = modelTransform->translation();
     QQuaternion curRot = modelTransform->rotation();
     QVector3D curScale = modelTransform->scale3D();
+    QColor curColor = modelMaterial->diffuse();
 
     // First frame.
     transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(0, curTrans.x())));
@@ -288,6 +294,9 @@ void ScenePlayer::addAnimations(const SceneData &sd,
     scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(0, curScale.x())));
     scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(0, curScale.y())));
     scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(0, curScale.z())));
+    colorR.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(0, curColor.redF())));
+    colorG.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(0, curColor.greenF())));
+    colorB.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(0, curColor.blueF())));
 
     for (const SceneData::Frame &f : sd.frames) {
         if (f.t == 0)
@@ -360,11 +369,18 @@ void ScenePlayer::addAnimations(const SceneData &sd,
                 scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curScale.z())));
             }
         }
+
+        if (ch.change & SceneData::ModelChange::Color) {
+            curColor = ch.color;
+            colorR.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curColor.redF())));
+            colorG.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curColor.greenF())));
+            colorB.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curColor.blueF())));
+        }
     }
 
     // Last frame.
     transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curTrans.x())));
-    transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curTrans.y())));
+    transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curTrans. y())));
     transZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curTrans.z())));
     rotX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curRot.x())));
     rotY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curRot.y())));
@@ -373,6 +389,9 @@ void ScenePlayer::addAnimations(const SceneData &sd,
     scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curScale.x())));
     scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curScale.y())));
     scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curScale.z())));
+    colorR.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curColor.redF())));
+    colorG.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curColor.greenF())));
+    colorB.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curColor.blueF())));
 
     trans.appendChannelComponent(transX);
     trans.appendChannelComponent(transY);
@@ -388,6 +407,10 @@ void ScenePlayer::addAnimations(const SceneData &sd,
     scale.appendChannelComponent(scaleY);
     scale.appendChannelComponent(scaleZ);
 
+    color.appendChannelComponent(colorR);
+    color.appendChannelComponent(colorG);
+    color.appendChannelComponent(colorB);
+
     if (changes & SceneData::ModelChange::Translation)
         clipData.appendChannel(trans);
 
@@ -396,6 +419,9 @@ void ScenePlayer::addAnimations(const SceneData &sd,
 
     if (changes & SceneData::ModelChange::Scale)
         clipData.appendChannel(scale);
+
+    if (changes & SceneData::ModelChange::Color)
+        clipData.appendChannel(color);
 
     clip->setClipData(clipData);
 

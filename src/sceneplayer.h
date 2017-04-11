@@ -58,8 +58,8 @@
 namespace Qt3DCore {
 class QTransform;
 }
-namespace Qt3DRender {
-class QMaterial;
+namespace Qt3DExtras {
+class QPhongMaterial;
 }
 
 class ScenePlayer : public Qt3DCore::QEntity
@@ -94,7 +94,7 @@ private:
                        const QByteArray &modelId,
                        Qt3DCore::QEntity *modelEntity,
                        Qt3DCore::QTransform *modelTransform,
-                       Qt3DRender::QMaterial *modelMaterial);
+                       Qt3DExtras::QPhongMaterial *modelMaterial);
 
     QString m_filename;
     QScopedPointer<SceneParser> m_parser;
