@@ -308,27 +308,31 @@ void ScenePlayer::addAnimations(const SceneData &sd,
         const SceneData::ModelChange &ch(f.modelChanges[modelId]);
 
         // Channels must be fully specified, meaning 3 (or 4) components are required always for t/r/s.
+        // Time values are, surprisingly enough, in seconds.
+
+#define T(p) QVector2D(f.t / 1000.0f, p)
+#define FINAL_T(p) QVector2D(sd.totalTime / 1000.0f, p)
 
         if (ch.change & SceneData::ModelChange::Translation) {
             if (ch.change & SceneData::ModelChange::TranslationX) {
                 curTrans.setX(ch.translation.x());
-                transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, ch.translation.x())));
+                transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(ch.translation.x())));
             } else {
-                transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curTrans.x())));
+                transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curTrans.x())));
             }
 
             if (ch.change & SceneData::ModelChange::TranslationY) {
                 curTrans.setY(ch.translation.y());
-                transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, ch.translation.y())));
+                transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(ch.translation.y())));
             } else {
-                transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curTrans.y())));
+                transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curTrans.y())));
             }
 
             if (ch.change & SceneData::ModelChange::TranslationZ) {
                 curTrans.setZ(ch.translation.z());
-                transZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, ch.translation.z())));
+                transZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(ch.translation.z())));
             } else {
-                transZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curTrans.z())));
+                transZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curTrans.z())));
             }
         }
 
@@ -341,57 +345,57 @@ void ScenePlayer::addAnimations(const SceneData &sd,
             if (ch.change & SceneData::ModelChange::RotationZ)
                 r.setZ(ch.rotation.z());
             curRot = QQuaternion::fromEulerAngles(r);
-            rotX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curRot.x())));
-            rotY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curRot.y())));
-            rotZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curRot.z())));
-            rotW.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curRot.scalar())));
+            rotX.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curRot.x())));
+            rotY.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curRot.y())));
+            rotZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curRot.z())));
+            rotW.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curRot.scalar())));
         }
 
         if (ch.change & SceneData::ModelChange::Scale) {
             if (ch.change & SceneData::ModelChange::ScaleX) {
                 curScale.setX(ch.scale.x());
-                scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, ch.scale.x())));
+                scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(ch.scale.x())));
             } else {
-                scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curScale.x())));
+                scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curScale.x())));
             }
 
             if (ch.change & SceneData::ModelChange::ScaleY) {
                 curScale.setY(ch.scale.y());
-                scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, ch.scale.y())));
+                scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(ch.scale.y())));
             } else {
-                scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curScale.y())));
+                scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curScale.y())));
             }
 
             if (ch.change & SceneData::ModelChange::ScaleZ) {
                 curScale.setZ(ch.scale.z());
-                scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, ch.scale.z())));
+                scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(ch.scale.z())));
             } else {
-                scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curScale.z())));
+                scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curScale.z())));
             }
         }
 
         if (ch.change & SceneData::ModelChange::Color) {
             curColor = ch.color;
-            colorR.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curColor.redF())));
-            colorG.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curColor.greenF())));
-            colorB.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(f.t, curColor.blueF())));
+            colorR.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curColor.redF())));
+            colorG.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curColor.greenF())));
+            colorB.appendKeyFrame(Qt3DAnimation::QKeyFrame(T(curColor.blueF())));
         }
     }
 
     // Last frame.
-    transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curTrans.x())));
-    transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curTrans. y())));
-    transZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curTrans.z())));
-    rotX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curRot.x())));
-    rotY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curRot.y())));
-    rotZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curRot.z())));
-    rotW.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curRot.scalar())));
-    scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curScale.x())));
-    scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curScale.y())));
-    scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curScale.z())));
-    colorR.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curColor.redF())));
-    colorG.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curColor.greenF())));
-    colorB.appendKeyFrame(Qt3DAnimation::QKeyFrame(QVector2D(sd.totalTime, curColor.blueF())));
+    transX.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curTrans.x())));
+    transY.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curTrans. y())));
+    transZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curTrans.z())));
+    rotX.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curRot.x())));
+    rotY.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curRot.y())));
+    rotZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curRot.z())));
+    rotW.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curRot.scalar())));
+    scaleX.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curScale.x())));
+    scaleY.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curScale.y())));
+    scaleZ.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curScale.z())));
+    colorR.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curColor.redF())));
+    colorG.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curColor.greenF())));
+    colorB.appendKeyFrame(Qt3DAnimation::QKeyFrame(FINAL_T(curColor.blueF())));
 
     trans.appendChannelComponent(transX);
     trans.appendChannelComponent(transY);
