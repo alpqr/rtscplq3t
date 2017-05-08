@@ -250,6 +250,8 @@ void ScenePlayer::addAnimations(const SceneData &sd,
         mapping->setTarget(modelMaterial);
         mapping->setProperty(QStringLiteral("diffuse"));
         mapper->addMapping(mapping);
+        // required for the time being since for material properties we must go through the frontend
+        modelMaterial->setPropertyTracking(QStringLiteral("diffuse"), Qt3DCore::QNode::TrackAllValues);
     }
 
     animator->setChannelMapper(mapper);
